@@ -1,0 +1,61 @@
+---
+title: "Performance Measure Machine Learning Project"
+author: "Eric J Sullivan"
+date: "October 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Summary
+
+In this project we have used sensor data from the Human Activity Recognition data set to train and evaluate a random forest model to predict the quality of exercises performed from the measured value of multiple sensor outputs.
+
+<a href = "http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har">http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har</a>
+
+## Data Preparation
+
+First,  load the data.  The pml_testing file becomes the validation data set and the pml_training data set is split to create a training set, pml_trainingshorta, and a testing training set, pml_trainingshortb.  The training and testing sets have both had all variables with NA values removed.
+
+```{r warning=FALSE messages = FALSE}
+library(readr)
+library(caret)
+
+pml_training <- read_csv("pml-training.csv")
+pml_validation <- read_csv("pml-testing.csv")
+pml_training$classe <- as.factor(pml_training$classe)
+
+pml_trainingshort <- pml_training[ , colSums(is.na(pml_training))==0 ]
+
+inTrain <- createDataPartition( y = pml_trainingshort$classe, p = 0.7, list = FALSE)
+pml_trainingshorta <- pml_trainingshort[inTrain,]
+pml_trainingshortb <- pml_trainingshort[-inTrain,]
+```
+
+## Train and Evaluate Model
+
+A random forest model is trained on the training data set and its confusion matrix and accuracy for the training set are displayed below.
+
+```{r warning=FALSE}
+set.seed(21141141)
+PmlRFModel <- train(classe~.,data = pml_trainingshorta[,8:60], method = "rf")
+confusionMatrix(PmlRFModel)
+```
+
+The model is evaluated against its predictions for the testing data set.
+
+```{r warning=FALSE}
+confusionMatrix(pml_trainingshortb$classe,predict(PmlRFModel,pml_trainingshortb))
+```
+
+## Predict validation data set
+
+Finally, here are the model's predictions for the validation data set:
+
+```{r warning=FALSE}
+PmlRFPrediction <- predict(PmlRFModel,pml_validation)
+PmlRFPrediction
+```
+
